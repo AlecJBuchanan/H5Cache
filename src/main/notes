@@ -1,0 +1,41 @@
+TODO:
+
+ - test code up to this point
+ - add to github
+ - work on getting ldpreload out of recursive loop
+ - test shared memory with multipl processes?
+
+
+Structure:
+h5main.c
+h5cach.c
+h5chunks.c
+h5shmmem.c
+h5loader.c
+
+Scala Code:
+
+def H5Dread(dataset_id: Int, mem_type_id: Int, mem_space_id: Int, file_space_id: Int, xfer_plist_id: Int, buf: Array[String])
+def getTime(): String
+def loadAllChunks(chunks: Array[Array[Int]], chunkSize: Array[Long], dir: String, dataset_id: Int, ndims: Int)
+def loadChunk(filename: String, chunk: Array[Int], chunkSize: Array[Long], dataset_id: Int, ndims: Int)
+def readData(dir: String, ndims: Int, chunkSize: Array[Long], start: Array[Long], end: Array[Long], buf: Array[String])
+def getLinearCord(ndims: Int, local: Array[Long], chunkSize: Array[Long]): Int
+def getLocalCord(ndims: Int, cord: Array[Long], chunk: Array[Long], chunkSize: Array[Long], local: Array[Long])
+def getChunkID(ndims: Int, cord: Array[Long], chunkSize: Array[Long], chunk: Array[Long])
+def getCord(ndims: Int, start: Array[Long], end: Array[Long], cell: Int, cord: Array[Long])
+def findNumberOfChunks(ndims: Int, start: Array[Long], end: Array[Long]): Int
+def getListOfChunks(ndims: Int, start: Array[Long], end: Array[Long], nchunks: Int, chunks: Array[Array[Int]])
+def getListOfChunksOld(ndims: Int, start: Array[Long], end: Array[Long])
+
+
+Next weeks report
+tested shm it works - could test between multiple processses
+tested ldpreload it works
+  started thinking that i didnt test it in the best env
+  not sure how to forward a func call with out a recursive loop
+  not sure how its going to handle objects
+started porting code over
+  actual coding is easy
+  hard part is setting up env
+
