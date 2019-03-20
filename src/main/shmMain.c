@@ -1,6 +1,14 @@
 #include "shmMain.h"
 
-
+void initMetaData(void *shm)
+{
+  // TODO:
+  // 1. add meta data struct to shm
+  // 2. add hashmap to shm after metadata
+  // 3. point to hashmap from metadata struct
+  // 4. add ordered list to smh
+  // 5. point to ordered list from meta data struct
+}
 void *initShm(H5Meta_t *H5Meta)
 {
   // TODO
@@ -8,6 +16,29 @@ void *initShm(H5Meta_t *H5Meta)
   //      if exists then return pointer to shm
   // 2. create shm
   //      base it off of the file name and dataset name
+
+  char *shm_file = "metaTest";
+  int fd;
+  void *shm;
+  fd = shm_open(shm_file, O_RDWR, 0644);
+  if (errno == ENOENT){
+    // File not found
+    fd = shm_open(shm_file, O_CREAT, 0644);
+    ftruncate(fd, METADATA_SIZE);
+    shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    initMetaData(shm);
+  }
+  else if (fd <= 0){
+    perror("Failure 1\n");
+    exit(-1);
+  }
+  else shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  if (shm == MAP_FAILED){
+    perror("FAILURE 2");
+    exit(-1);
+  }
+  return shm
 }
 
 int destroySem(char * filename)

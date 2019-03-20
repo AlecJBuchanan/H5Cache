@@ -10,6 +10,7 @@
 #include <semaphore.h>
 #include "globals.h"
 #include <glib.h>
+#include <errno.h>
 
 #define NUMBER_CHUNKS 16
 
