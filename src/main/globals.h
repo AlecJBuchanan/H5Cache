@@ -4,6 +4,9 @@
 #include "hdf5.h"
 #include <stdlib.h>
 
+#define SHM_SIZE   134217728 // 128 MB
+#define NUM_CHUNKS 1024
+
 #define TRUE  1
 #define FALSE 0
 
@@ -11,11 +14,13 @@
 
 #define SUCCESS 0
 #define FAILURE 1
-#define CHUNK_NO_CHUNKS   0100
-#define CHUNK_SIZE_FAILED 0101
+#define CHUNK_NO_CHUNKS    0100
+#define CHUNK_SIZE_FAILED  0101
 
 #define DATA_SIZE_FAILED   0200
 #define DATA_BOUNDS_FAILED 0201
+
+#define SHM_FILE_NOT_FOUND 0300
 
 #define PRINT_AND_QUIT(text, rc) do{ \
         printf(text);                 \
@@ -33,6 +38,8 @@ typedef struct H5Chunk_t{
   hsize_t *size;
   int     *start;
   int     *end;
+  int      nchunks;
+  char    *chunks;
 }H5Chunk_t;
 
 typedef struct H5Data_t{
@@ -50,11 +57,18 @@ typedef struct H5Data_t{
 }H5Data_t;
 
 
-
+typedef struct H5Shm_t{
+  void  *data;
+//  void  *lruIndex;
+//  void  *chunkList;
+  void *idIndex;
+  int   freeSpaceOffset;
+}H5Shm_t;
 typedef struct H5Mem_t{
-  hid_t mem_type_id;
-  hid_t mem_space_id;
-  void *buf;
+  hid_t   mem_type_id;
+  hid_t   mem_space_id;
+  void    *buf;
+  H5Shm_t shm; 
 }H5Mem_t;
 
 

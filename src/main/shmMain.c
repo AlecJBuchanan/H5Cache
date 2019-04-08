@@ -1,45 +1,59 @@
 #include "shmMain.h"
 
-void initMetaData(void *shm)
-{
-  // TODO:
-  // 1. add meta data struct to shm
-  // 2. add hashmap to shm after metadata
-  // 3. point to hashmap from metadata struct
-  // 4. add ordered list to smh
-  // 5. point to ordered list from meta data struct
-}
-void *initShm(H5Meta_t *H5Meta)
-{
-  // TODO
-  // 1. check if metadata already exists
-  //      if exists then return pointer to shm
-  // 2. create shm
-  //      base it off of the file name and dataset name
-
-  char *shm_file = "metaTest";
+int openShm(char * name, int size, void * shm){
   int fd;
-  void *shm;
-  fd = shm_open(shm_file, O_RDWR, 0644);
+  fd = shm_open(name, O_RDWR, 0644);
   if (errno == ENOENT){
-    // File not found
-    fd = shm_open(shm_file, O_CREAT, 0644);
-    ftruncate(fd, METADATA_SIZE);
+    if (DEBUG) printf("INFO  shmMain-openShm: Creating shared memory\n");
+    fd = shm_open(name, O_CREAT, 0644);
+    ftruncate(fd, size);
     shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    initMetaData(shm);
+    return SHM_FILE_NOT_FOUND;
   }
   else if (fd <= 0){
+    // Failure
     perror("Failure 1\n");
     exit(-1);
   }
-  else shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-
+  if (DEBUG) printf("INFO  shmMain-openShm: Opening shared memory\n");
+  shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  
+  // Check for failure
   if (shm == MAP_FAILED){
     perror("FAILURE 2");
     exit(-1);
   }
-  return shm
+  return SUCCESS;  
 }
+
+
+unsigned int hashfunction(unsigned char *str)
+{
+    unsigned int hash = 0;
+    int c;
+
+    while (c = *str++)
+      hash += c;
+
+    return hash;
+}
+int key_eq_fn(void *a, void *b){
+    return strcmp(a,b);
+}
+int initShm(H5Shm_t *shmInfo)
+{
+  // Initialization
+  int fd;
+  int rc = 0;
+  rc = openShm(SHM_FILE,   SHM_SIZE, shmInfo->data);
+  //rc = openShm(LRU_INDEX,  4096, shmInfo->lruIndex);
+  //rc = openShm(CHUNK_LIST, 4096, shmInfo->chunkList); 
+
+  shmInfo->idIndex = create_shmht(ID_INDEX, NUM_CHUNKS, 129, hashfunction, key_eq_fn);
+}
+
+
+
 
 int destroySem(char * filename)
 {

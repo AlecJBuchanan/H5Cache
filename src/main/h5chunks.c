@@ -32,6 +32,58 @@ void getReadBounds(H5Data_t *data)
 }
 
 
+int getNumberChunks(int *start, int *end,  int dims)
+{
+  int nchunks  = 1;
+  for (int dim = 0; dim < dims; dim++) 
+    nchunks = nchunks * (end[dim] - start[dim] + 1);
+  return nchunks;
+}
+
+
+int getChunkIDs(H5Data_t *data)
+{
+  if (DEBUG) printf("INFO  H5Chunks.c - getChunkIDs: Initialization\n");
+  int *start  = data->chunk.start;
+  int *end    = data->chunk.end;
+  int *size   = data->chunk.size;
+  int dims    = data->dims;
+  int nchunks = getNumberChunks(start, end, dims);
+
+  data->chunk.chunks  = malloc((sizeof(char) * (CHUNK_ID_LEN + 1)) * nchunks);
+  data->chunk.nchunks = nchunks;
+
+  if (DEBUG) printf("INFO  H5Chunks.c - getChunkIDs: Finding chunk IDs\n");
+  for (int c = 0; c < nchunks; c++){
+    int chunkID[dims];
+    char cid[128];
+    for(int dim = 0; dim < dims; dim++){
+      int diff        = end[dim] - start[dim] + 1;
+      double divider  = 1;
+      for (int div = 0; div < dim; div++)
+        divider = divider * (end[div] - start[div] + 1);
+      int oneDimChunkID = ((int)floor(((double)c)/divider)%diff) + start[dim];
+      if (DEBUG) printf("INFO  H5Chunks.c - getChunkIDs: chunk %d dimension %d has ID = %d\n", c, dim, oneDimChunkID);
+      // TODO add filename and dataset name
+      //sprintf(chunkID, "%s-%d", chunkID, oneDimChunkID);
+      chunkID[dim] = oneDimChunkID;
+
+    }
+
+    char curId[32];
+    sprintf(curId, "-%d", chunkID[0]); 
+    strcpy(cid, curId);
+    for (int d = 1; d < dims; d++){
+      sprintf(curId, "-%d", chunkID[d]);
+      strcat(cid, curId);
+    }
+    printf("INFO  H5Chunks.c - getChunkIDs: Identified chunk %s%s at index %d\n", "filename-datasetname", cid, c);
+    //printf("data->chunk.chunks = %p\n", data->chunk.chunks);
+    //printf("data->chunk.chunks[%d * (1 + %d)] = %p\n", c, CHUNK_ID_LEN, data->chunk.chunks + (c * (1 + CHUNK_ID_LEN)));
+    sprintf(data->chunk.chunks + (c * (1 + CHUNK_ID_LEN)), "filename-datasetname%s", cid);
+  }
+}
+
 
 
 int readChunks(H5Meta_t *H5Meta)
@@ -52,7 +104,7 @@ void *readChunk(H5Meta_t *H5Meta, int *chunk)
   hsize_t offset[rank];
   getOffset(offset, H5Meta->data.chunk.size, chunk, rank);
 
-  shm           = allocChunk(H5Meta->data.chunk.size);
+  shm           = allocChunk(&H5Meta->mem.shm, H5Meta->data.chunk.size, rank);
   hid_t dspace  = H5Dget_space(H5Meta->data.dataSetSpace);
   hid_t hyperid = H5Sselect_hyperslab(dspace, H5S_SELECT_SET, offset, NULL, H5Meta->data.chunk.size, NULL); 	// TODO: test for correctness
   hid_t mspace  = H5Screate_simple(rank, H5Meta->data.dimSize, H5Meta->data.maxDimSize);			// TODO: test for correctness
@@ -61,16 +113,19 @@ void *readChunk(H5Meta_t *H5Meta, int *chunk)
   return shm;
 }
 
-
-
-void *getShmLoc(int *chunk)
+void *getShmLoc(H5shm_t *H5shm, int *chunk, int rank)
 {
-  // TODO
-  // check metadata 
-  return NULL;
+  int size = 1;
+  for (int d = 0; d < rank; d++)
+    size = size * chunk[d];
+
+  // return pointer to location of chunk in shm
+  if (SHM_SIZE - H5shm->freeSpaceOffset < size) return NULL;
+  
+  int offset = H5shm->freeSpaceOffset;
+  H5shm->freeSpaceOffset = H5shm->freeSpaceOffset + size;
+  return H5shm + offset; // TODO verify that void* addition is same as cha* addition 
 }
-
-
 
 void getOffset(hsize_t offset[], hsize_t * size, int * chunk, int rank){
   for (int dim = 0; dim < rank; dim++)
@@ -81,10 +136,8 @@ void getOffset(hsize_t offset[], hsize_t * size, int * chunk, int rank){
 
 void *allocChunk(hsize_t *size)
 {
-  // TODO
-  // 1. check for empty chunks
-  // 2. if empty chunk is there then claim it
-  // 3. otherwise, evict chunk
-  // 4. return the memaddress
+  // Check if shm is full
+  
+ 
   return NULL;
 }

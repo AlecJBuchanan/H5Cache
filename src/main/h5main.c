@@ -1,4 +1,5 @@
 #include "hdf5.h"
+#include "h5cache.h"
 #include <stdlib.h>
 
 int main(int argc, char *argv[])
@@ -58,10 +59,10 @@ int main(int argc, char *argv[])
   Y = chunk_size[1];
   Z = chunk_size[2];
 
-  if (0){
+  //if (0){
     printf("Found chunk size: (%d, %d, %d)\n", X, Y, Z);
-    return 1;
-  }
+  //  return 1;
+  //}
 
   offset[0] = 0;
   offset[1] = 0;

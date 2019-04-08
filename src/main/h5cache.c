@@ -21,18 +21,30 @@ herr_t H5DreadNew( hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_
   //
   // Chunk Evalutaion
   //
+  if (DEBUG) printf("INFO  H5Cache.c - H5Dread: Initializing chunk info\n");
   rc = initChunkInfo(&H5Meta.data);
   if (rc != SUCCESS) PRINT_AND_QUIT("ERROR H5Cache.c - H5Dread: Failed to get chunk information\n",rc);
   if (!H5Meta.data.chunk.chunked) return H5Dread(dataset_id, mem_type_id, mem_space_id, file_space_id, xfer_plist_id, buf);
   // TODO make above statement compatible with ld preload
 
+  if (DEBUG) printf("INFO  H5Cache.c - H5Dread: Initializing shared memory and selecting bounds\n");
+  initShm(&H5Meta.mem.shm);
+
   rc = H5Sget_select_bounds(file_space_id, H5Meta.data.hyperslab.start, H5Meta.data.hyperslab.end);
   if (rc < 0) PRINT_AND_QUIT("ERROR H5Cache.c - H5Dread: Failed to get hyperslab bounds\n", DATA_BOUNDS_FAILED);
 
+
+  if (DEBUG) printf("INFO  H5Cache.c - H5Dread: Getting chunk IDs\n");
   getReadBounds(&H5Meta.data); 
   printf("chunk start: %d\n", H5Meta.data.chunk.start[0]);
   printf("chunk end: %d\n", H5Meta.data.chunk.end[0]);
   
+  getChunkIDs(&H5Meta.data);
+  readChunks(&H5Meta); 
+  printf("\n");
+  // TODO read chunks and re evaluate readChunk func
+  // TODO test getchunkIDS
+
   return SUCCESS;
 }
 
