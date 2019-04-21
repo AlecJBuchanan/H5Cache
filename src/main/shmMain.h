@@ -13,7 +13,7 @@
 #include <errno.h>
 #include "shmht.h"
 
-#define NUMBER_CHUNKS 16
+#define NUMBER_CHUNKS 64
 #define CHUNK_ID_LEN  128
 
 #define SHM_FILE   "h5cacheData"

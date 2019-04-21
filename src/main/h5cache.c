@@ -38,8 +38,8 @@ herr_t H5DreadNew( hid_t dataset_id, hid_t mem_type_id, hid_t mem_space_id, hid_
   getReadBounds(&H5Meta.data); 
   printf("chunk start: %d\n", H5Meta.data.chunk.start[0]);
   printf("chunk end: %d\n", H5Meta.data.chunk.end[0]);
-  
-  getChunkIDs(&H5Meta.data);
+
+  //getChunkIDs(&H5Meta.data);
   readChunks(&H5Meta); 
   printf("\n");
   // TODO read chunks and re evaluate readChunk func

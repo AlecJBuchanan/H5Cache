@@ -55,9 +55,9 @@ int main(int argc, char *argv[])
   dcpl_id   = H5Dget_create_plist(dataset);
   status    = H5Pget_chunk(dcpl_id, rank, chunk_size);
   int X, Y, Z;
-  X = chunk_size[0];
-  Y = chunk_size[1];
-  Z = chunk_size[2];
+  X = chunk_size[0] * 2;
+  Y = chunk_size[1] * 2;
+  Z = chunk_size[2] * 2;
 
   //if (0){
     printf("Found chunk size: (%d, %d, %d)\n", X, Y, Z);
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
   status = H5Sselect_hyperslab(memspace, H5S_SELECT_SET, offset_out, NULL, count_out, NULL);
   printf("Reading\n");
 
-  int *data_out = malloc(sizeof(int) * X * Y * Z);
+  int *data_out = malloc(sizeof(int) * X * Y * Z * 2);
   status        = H5DreadNew(dataset, H5T_STD_I32BE, memspace, dataspace, H5P_DEFAULT, data_out);
   printf("STATUS: %d\n", status);
 

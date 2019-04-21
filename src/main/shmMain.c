@@ -1,25 +1,37 @@
 #include "shmMain.h"
 
-int openShm(char * name, int size, void * shm){
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+int openShm(char * name, int size, void ** shm, int flag){
   int fd;
-  fd = shm_open(name, O_RDWR, 0644);
-  if (errno == ENOENT){
-    if (DEBUG) printf("INFO  shmMain-openShm: Creating shared memory\n");
-    fd = shm_open(name, O_CREAT, 0644);
-    ftruncate(fd, size);
-    shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-    return SHM_FILE_NOT_FOUND;
+  int status;
+  
+  if (DEBUG) printf("INFO  shmMain-openShm: Opening shared memory\n");
+  fd = shm_open(name, flag, 0644);
+
+  if (DEBUG) printf("INFO  shmMain-openShm: Truncating shared memory\n");
+  status = ftruncate(fd, size);
+  if (flag == O_CREAT)return SUCCESS;
+
+
+  if (status == -1){
+    printf("ERROR shmMain-openShm: ftruncate failed\n");
   }
-  else if (fd <= 0){
+  if (fd <= 0){
     // Failure
     perror("Failure 1\n");
     exit(-1);
   }
-  if (DEBUG) printf("INFO  shmMain-openShm: Opening shared memory\n");
-  shm = mmap(NULL, shm, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+
+  if (DEBUG) printf("INFO  shmMain-openShm: Mapping shm file to memory\n");
+  *shm = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   
   // Check for failure
-  if (shm == MAP_FAILED){
+  if (*shm == MAP_FAILED){
     perror("FAILURE 2");
     exit(-1);
   }
@@ -27,12 +39,12 @@ int openShm(char * name, int size, void * shm){
 }
 
 
-unsigned int hashfunction(unsigned char *str)
+unsigned int hashfunction(void *str)
 {
     unsigned int hash = 0;
     int c;
 
-    while (c = *str++)
+    while (c = *(unsigned char*)str++)
       hash += c;
 
     return hash;
@@ -40,16 +52,39 @@ unsigned int hashfunction(unsigned char *str)
 int key_eq_fn(void *a, void *b){
     return strcmp(a,b);
 }
+
+
+
+
 int initShm(H5Shm_t *shmInfo)
 {
   // Initialization
+  int retVal  = 1;
+  int initVal = 0; //CHUNK_ID_LEN + 1; // TODO: set to zero
+  int rc      = 0;
   int fd;
-  int rc = 0;
-  rc = openShm(SHM_FILE,   SHM_SIZE, shmInfo->data);
-  //rc = openShm(LRU_INDEX,  4096, shmInfo->lruIndex);
-  //rc = openShm(CHUNK_LIST, 4096, shmInfo->chunkList); 
+  size_t retSize;
 
-  shmInfo->idIndex = create_shmht(ID_INDEX, NUM_CHUNKS, 129, hashfunction, key_eq_fn);
+
+  if (DEBUG) printf("INFO  shmMain-initShm: Initializing shm for chunks\n");
+  rc = openShm(SHM_FILE,   SHM_SIZE, &shmInfo->data, O_CREAT |O_RDWR);
+
+  if (DEBUG) printf("INFO  shmMain-initShm: Initializing shm for hash table\n");
+  rc = openShm(ID_INDEX,  32768, &(shmInfo->idIndex), O_CREAT |O_RDWR); // 32MB
+  
+  if (DEBUG) printf("INFO  shmMain-initShm: Creating hash table\n");
+  shmInfo->idIndex = create_shmht("/dev/shm/h5cacheIdIndex", NUM_CHUNKS, CHUNK_ID_LEN, hashfunction, key_eq_fn); 
+printf("hashtable at %p\n", shmInfo->idIndex); 
+
+  if (DEBUG) printf("INFO  shmMain-initShm: Verifying freespace offset\n");
+  void * status    = shmht_search (shmInfo->idIndex, FREE_SPACE_KEY, sizeof(FREE_SPACE_KEY), &retSize);
+printf("verifying\n");
+
+  if (status == NULL) retVal = shmht_insert (shmInfo->idIndex, FREE_SPACE_KEY, sizeof(FREE_SPACE_KEY), &initVal, sizeof(int));
+  if (retVal < 1) printf("ERROR shmMain-initShm: Failed to insert initial values into shmht\n");
+  if (DEBUG) printf("INFO  shmMain-initShm: Done initializing shm\n");
+
+  //if (*(char *)shmInfo->data != 0) memset(shmInfo->data, 0, sizeof(char) * CHUNK_ID_LEN); // TODO: remove line
 }
 
 

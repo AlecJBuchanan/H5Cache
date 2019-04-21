@@ -1,10 +1,15 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#include <string.h>
+#include <math.h>
 #include "hdf5.h"
+#include "shmht.h"
 #include <stdlib.h>
 
-#define SHM_SIZE   134217728 // 128 MB
+#define FREE_SPACE_KEY "freespace"
+
+#define SHM_SIZE   1073741824 // 1 GB
 #define NUM_CHUNKS 1024
 
 #define TRUE  1
@@ -61,8 +66,8 @@ typedef struct H5Shm_t{
   void  *data;
 //  void  *lruIndex;
 //  void  *chunkList;
-  void *idIndex;
-  int   freeSpaceOffset;
+  struct shmht *idIndex;
+  int    freeSpaceOffset;
 }H5Shm_t;
 typedef struct H5Mem_t{
   hid_t   mem_type_id;
